@@ -6,21 +6,48 @@ BASE_DIR = Path(__file__).resolve().parent
 DOCS_DIR = BASE_DIR / "docs"
 MD_DIR = BASE_DIR / "md"
 
+SUPPORTED_EXTENSIONS = {
+    ".pdf",
+    ".docx",
+    ".pptx",
+    ".xlsx",
+    ".xls",
+    ".html",
+    ".htm",
+    ".txt",
+    ".csv",
+}
+
 
 def ensure_folders():
     DOCS_DIR.mkdir(exist_ok=True)
     MD_DIR.mkdir(exist_ok=True)
 
 
+def get_supported_files():
+    files = []
+
+    for file in DOCS_DIR.iterdir():
+        if not file.is_file():
+            continue
+
+        if file.name == ".gitkeep":
+            continue
+
+        if file.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            continue
+
+        files.append(file)
+
+    return sorted(files)
+
+
 def list_files():
-    files = sorted([
-        file for file in DOCS_DIR.iterdir()
-        if file.is_file()
-    ])
+    files = get_supported_files()
 
     if not files:
-        print("\nBelum ada file di folder docs/")
-        print("Taruh file PDF/DOCX/PPTX/XLSX/HTML di folder docs/ dulu.\n")
+        print("\nBelum ada file yang didukung di folder docs/.")
+        print("Taruh file PDF, DOCX, PPTX, XLSX, HTML, TXT, atau CSV ke folder docs/.\n")
         return []
 
     print("\nFile yang tersedia di docs/:")
@@ -28,6 +55,21 @@ def list_files():
         print(f"{index}. {file.name}")
 
     return files
+
+
+def convert_file(file, md_converter):
+    output_file = MD_DIR / f"{file.stem}.md"
+
+    print(f"\nMengonversi: {file.name}")
+    print(f"Hasil ke: md/{output_file.name}")
+
+    try:
+        result = md_converter.convert(str(file))
+        output_file.write_text(result.text_content, encoding="utf-8")
+        print("Status: berhasil")
+    except Exception as error:
+        print(f"Status: gagal")
+        print(f"Error: {error}")
 
 
 def convert_one_file():
@@ -42,15 +84,8 @@ def convert_one_file():
         print("\nPilihan tidak valid.\n")
         return
 
-    output_file = MD_DIR / f"{selected_file.stem}.md"
-
-    print(f"\nMengonversi: {selected_file.name}")
-    print(f"Hasil ke: md/{output_file.name}")
-
-    md = MarkItDown()
-    result = md.convert(str(selected_file))
-
-    output_file.write_text(result.text_content, encoding="utf-8")
+    md_converter = MarkItDown()
+    convert_file(selected_file, md_converter)
 
     print("\nSelesai.\n")
 
@@ -60,24 +95,21 @@ def convert_all_files():
     if not files:
         return
 
-    md = MarkItDown()
+    print(f"\nTotal file yang akan dikonversi: {len(files)}")
+
+    md_converter = MarkItDown()
 
     for file in files:
-        output_file = MD_DIR / f"{file.stem}.md"
+        convert_file(file, md_converter)
 
-        print(f"\nMengonversi: {file.name}")
-        result = md.convert(str(file))
-        output_file.write_text(result.text_content, encoding="utf-8")
-        print(f"Hasil: md/{output_file.name}")
-
-    print("\nSemua file selesai dikonversi.\n")
+    print("\nBulk convert selesai.\n")
 
 
 def main_menu():
     ensure_folders()
 
     while True:
-        print("=== MarkItDown Converter ===")
+        print("=== Markdown Tools ===")
         print("1. Lihat file di docs/")
         print("2. Convert satu file")
         print("3. Convert semua file")
