@@ -1,5 +1,7 @@
 from pathlib import Path
 from markitdown import MarkItDown
+import re
+import unicodedata
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -58,7 +60,8 @@ def list_files():
 
 
 def convert_file(file, md_converter):
-    output_file = MD_DIR / f"{file.stem}.md"
+    safe_stem = sanitize_filename(file.stem)      
+    output_file = MD_DIR / f"{safe_stem}.md"  
 
     print(f"\nMengonversi: {file.name}")
     print(f"Hasil ke: md/{output_file.name}")
@@ -128,6 +131,28 @@ def main_menu():
             break
         else:
             print("\nMenu tidak valid.\n")
+
+def sanitize_filename(name: str) -> str:
+    name = unicodedata.normalize("NFKD", name)
+    name = name.encode("ascii", "ignore").decode("ascii")
+
+    name = re.sub(r'[\\/:*?"<>|]', "", name)
+
+    name = re.sub(r"[^\w\-]", "_", name)
+
+    name = re.sub(r"_+", "_", name)
+
+    name = name.strip("_.")
+
+    RESERVED = {"CON","PRN","AUX","NUL","COM1","COM2","COM3","COM4","COM5",
+                "COM6","COM7","COM8","COM9","LPT1","LPT2","LPT3","LPT4",
+                "LPT5","LPT6","LPT7","LPT8","LPT9"}
+    if name.upper() in RESERVED:
+        name = f"_{name}"
+
+    name = name[:200]
+
+    return name if name else "untitled"
 
 
 if __name__ == "__main__":
